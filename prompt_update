@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# functions for making a nice looking prompt
+# works in conjunction with .bashrc
+#
+# big thing is an info bar on the right with the following info
+#  - a battery indicator in square brackets: a + when it's plugged in, - when not
+#     -> [+] when it's plugged in
+#     -> [-] when unplugged
+#     -> [!] when full
+#  - a Dropbox indicator (depending on Dropbox's official command-line script)
+#    that gives the current status of Dropbox (and, in turn, internet access)
+#     -> 'x' when Dropbox isn't running/connected
+#     -> '%' when Dropbox is syncing
+#     -> '.' when Dropbox is idle
+#  - a clock (needs no explanation)
+#
+# this information bar is also color-coded for added information on the battery status
+#  - green if the battery has >50% charge
+#  - orange/yellow if the battery has >15% charge
+#  - red if the battery has <15% charge
+
+# battery status function
+function bat_stat {
+    charging=`acpi | grep Charging`
+    full=`acpi | grep Full`
+    if [ -z "$full" ]; then
+        if [ -z "$charging" ]; then
+            echo "-"
+        else
+            echo "+"
+        fi
+    else
+        echo "!"
+    fi
+}
+
+# dropbox status function
+function dbox_stat {
+    dbs=`python2 /home/benjamin/.dropbox/dropbox.py status`
+    if [ "$dbs" == "Idle" ]; then
+        echo "."
+    elif [ "$dbs" == "Dropbox isn't running!" ]; then
+        echo "x"
+    else
+        echo "%"
+    fi
+}
+
+# actually create the prompt
+# saves it to a file in the home directory...cheap hack, but it works
+while :
+do
+    db=`dbox_stat`
+    dt=`date +"%l:%M %P"`
+    bt=`bat_stat`
+    echo "$db [$bt] $dt" > ~/.prompt
+    sleep 5
+done

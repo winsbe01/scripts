@@ -1,0 +1,52 @@
+#!/bin/bash
+# wireless connect script
+
+if [ -z "$1" ]; then
+    echo "Usage: wireless [up/down] ([network name])"
+    exit 1
+fi
+
+# we need to kill remnant processes regardless of what they said
+# but only inform them if they're taking it down
+if [ "$1" == "down" ]; then
+    echo "Killing dhcpcd..."
+fi
+sudo killall dhcpcd >/dev/null 2>&1
+sleep 3
+if [ "$1" == "down" ]; then
+    echo "Killing wpa_supplicant..."
+fi
+sudo killall wpa_supplicant >/dev/null 2>&1
+
+# if they're putting it up, put the interface up, restart dhcpcd,
+# wpa_supplicant, and start dropbox
+if [ "$1" == "up" ]; then
+    echo "Putting eth0 up..."
+    sudo ifconfig eth0 up >/dev/null 2>&1
+    echo "Starting wpa_supplicant..."
+    sudo wpa_supplicant -B -Dwext -ieth0 -c/etc/wpa_supplicant.conf >/dev/null 2>&1
+
+    # if they gave us a specific network, feed it to iwconfig
+    if [ -n "$2" ]; then
+        echo "Connecting to $2..."
+        sudo iwconfig eth0 essid $2 >/dev/null 2>&1
+    fi
+
+    echo "Starting dhcpcd..."
+    sudo dhcpcd -t 60 eth0 >/dev/null 2>&1
+    #echo "Starting dropbox..."
+    #~/.dropbox-dist/dropboxd & >/dev/null 2>&1
+    python2 /home/benjamin/.dropbox/dropbox.py start
+
+# if they're putting it down, all that's left is to kill dropbox
+elif [ "$1" == "down" ]; then
+    echo "Killing dropbox..."
+    #sudo killall dropbox >/dev/null 2>&1
+    python2 /home/benjamin/.dropbox/dropbox.py stop
+
+# if someone's being a smartass and gave us a non-existant option
+else
+    echo "$1 is not an option."
+    echo "Usage: wireless [up/down] ([network name])"
+    exit 1
+fi
