@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#
+# amp3dd -- Amazon MP3 Daily Deals
+# by Ben Winston
+#
+# fetches and prints the daily album deal. probably best used with cron and a redirect to sendmail.
+#
+
+wget -qO- "http://www.amazon.com/b?ie=UTF8&node=163856011" | grep Daily | sed -e 's/<[^>]*>//g' -e 's/^ *//'
